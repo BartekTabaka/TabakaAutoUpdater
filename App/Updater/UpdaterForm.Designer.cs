@@ -17,6 +17,7 @@ namespace App.Updater
         private Button btnCheck;
         private Button btnUpdate;
         private Button btnCancel;
+        private Button btnRaw;
 
         protected override void Dispose(bool disposing)
         {
@@ -34,12 +35,13 @@ namespace App.Updater
             btnCheck = new Button();
             btnUpdate = new Button();
             btnCancel = new Button();
+            btnRaw = new Button();
 
             SuspendLayout();
 
             // ── Form ─────────────────────────────────────────────────
             Text = "Aktualizator — Winget";
-            Size = new Size(750, 540);
+            Size = new Size(880, 540);
             MinimumSize = new Size(600, 400);
             BackColor = Color.FromArgb(30, 30, 30);
             ForeColor = Color.White;
@@ -117,19 +119,33 @@ namespace App.Updater
                 Cursor = Cursors.Hand
             };
 
+            btnRaw = new Button
+            {
+                Text = "Czysty",
+                Width = 160,
+                Height = 34,
+                BackColor = Color.LightGreen,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+
             btnCheck.Enabled = false;
             btnUpdate.Enabled = false;
             btnCancel.Enabled = false;
+            btnRaw.Enabled = false;
 
             btnCheck.Location = new Point(10, 9);
             btnUpdate.Location = new Point(180, 9);
             btnCancel.Location = new Point(350, 9);
+            btnRaw.Location = new Point(520, 9);
 
             btnCheck.Click += BtnCheck_Click;
             btnUpdate.Click += BtnUpdate_Click;
             btnCancel.Click += BtnCancel_Click;
+            btnRaw.Click += BtnRaw_Click;
 
-            pnlBottom.Controls.AddRange(new Control[] { btnCheck, btnUpdate, btnCancel });
+            pnlBottom.Controls.AddRange(new Control[] { btnCheck, btnUpdate, btnCancel, btnRaw });
 
             // ── Składanie ────────────────────────────────────────────
             Controls.Add(rtbOutput);

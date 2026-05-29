@@ -18,7 +18,7 @@ namespace Core.Updater
         }
 
         public Task RunUpgradeAsync(Action<string> onLine, CancellationToken ct = default)
-            => RunWingetAsync("upgrade --all --scope machine --silent", onLine, ct);
+            => RunWingetAsync("upgrade --all --scope machine --silent --uninstall-previous", onLine, ct);
 
         private static (int Count, List<string> Names) ParseUpgradeList(List<string> lines)
         {

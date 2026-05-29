@@ -96,6 +96,11 @@ namespace App.Updater
 
         private void BtnCheck_Click(object sender, EventArgs e) => _ = CheckUpdatesAsync();
 
+        private void BtnRaw_Click(object sender, EventArgs e)
+        {
+
+        }
+
         private void PnlBottom_MouseMove(object sender, MouseEventArgs e)
         {
             var control = pnlBottom.GetChildAtPoint(e.Location);
