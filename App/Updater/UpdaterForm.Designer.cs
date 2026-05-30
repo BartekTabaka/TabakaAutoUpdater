@@ -121,7 +121,7 @@ namespace App.Updater
 
             btnRaw = new Button
             {
-                Text = "Czysty",
+                Text = "Debug",
                 Width = 160,
                 Height = 34,
                 BackColor = Color.LightGreen,

@@ -17,7 +17,8 @@ namespace App.Updater
         public UpdaterForm()
         {
             InitializeComponent();
-            Icon = new Icon("assets/icon.ico");
+            Icon = new Icon("assets/icon.ico");      // Ikona okna
+            WindowState = FormWindowState.Maximized; // Fullscreen
         }
 
         protected override async void OnLoad(EventArgs e)
@@ -58,6 +59,15 @@ namespace App.Updater
             {
                 SetState(AppState.Ready);
             }
+
+            //await CommandRunner.RunCommandRaw("winget upgrade --scope machine", line =>
+            //{
+            //    if (rtbOutput.InvokeRequired)
+            //        rtbOutput.Invoke(() => AppendLine(line, ClassifyLine(line)));
+            //    else
+            //        AppendLine(line, Color.AliceBlue);
+            //});
+            //SetState(AppState.Ready);
         }
 
         private async void BtnUpdate_Click(object sender, EventArgs e)
@@ -96,9 +106,73 @@ namespace App.Updater
 
         private void BtnCheck_Click(object sender, EventArgs e) => _ = CheckUpdatesAsync();
 
-        private void BtnRaw_Click(object sender, EventArgs e)
+        private async void BtnRaw_Click(object sender, EventArgs e)
         {
+            /*SetState(AppState.Checking);
+            rtbOutput.Clear();
+            AppendLine(" === DEBUG ===", Color.Red);
 
+            // Funkcja wspomagająca (żeby nie pisać tego samego wielokrotnie)
+            void AppendRaw(string line)
+            {
+                //AppendLine("AppendRaw", Color.Blue);
+                if (rtbOutput.InvokeRequired)
+                {
+                    rtbOutput.Invoke(() => AppendLine(line, Color.LightGray));
+                    //rtbOutput.Invoke(() => AppendLine("Invoke", Color.Blue));
+                }
+                else
+                {
+                    AppendLine("Bez Invoke", Color.Blue);
+                    AppendLine(line, Color.LightGray);
+                }
+            }
+
+            // ── Komendy ───────────────────────────────────────
+
+            // Wersja winget
+            AppendLine(" === WERSJA ===", Color.Red);
+            await CommandRunner.RunCommandRaw("winget --version", line =>
+            {
+                AppendRaw(line);
+            });
+
+            // Lista aplikacji
+            //AppendLine(" === LISTA ===", Color.Red);
+            //await CommandRunner.RunCommand("winget list --source winget", line =>
+            //{
+            //    AppendRaw(line);
+            //});
+
+            // Aktualizacje
+            AppendLine(" === AKTUALIZACJE ===", Color.Red);
+            await CommandRunner.RunCommandRaw("winget upgrade --scope machine", line =>
+            {
+                AppendRaw(line);
+            });
+
+            SetState(AppState.Done);*/
+
+            SetState(AppState.Checking);
+            rtbOutput.Clear();
+            AppendLine("=== DIAGNOSTICS ===", Color.Red);
+
+            var report = await m_WingetService.DiagnoseAsync();
+
+            // Każda linia raportu jako osobny wpis
+            foreach (var line in report.Split('\n'))
+            {
+                var color = line.StartsWith("!!!") ? Color.OrangeRed
+                          : line.StartsWith("[") && line.Contains("][ERR]") ? Color.Yellow
+                          : line.Contains("PAKIET:") ? Color.LightGreen
+                          : line.Contains("SEPARATOR") ? Color.Cyan
+                          : line.Contains("UWAGA") ? Color.OrangeRed
+                          : Color.LightGray;
+
+                AppendLine(line, color);
+            }
+
+            SetState(AppState.Done);
         }
 
         private void PnlBottom_MouseMove(object sender, MouseEventArgs e)
@@ -114,7 +188,8 @@ namespace App.Updater
         private void AppendLine(string text, Color color)
         {
             if (s_SpinnerChars.Contains(text.Trim())) return;
-            
+            if (string.IsNullOrWhiteSpace(text)) return;
+
             rtbOutput.SelectionStart = rtbOutput.TextLength;
             rtbOutput.SelectionLength = 0;
             rtbOutput.SelectionColor = color;
@@ -151,6 +226,7 @@ namespace App.Updater
                     btnCheck.Enabled = false;
                     btnUpdate.Enabled = false;
                     btnCancel.Enabled = false;
+                    btnRaw.Enabled = false;
                     break;
 
                 case AppState.Ready:
@@ -158,6 +234,7 @@ namespace App.Updater
                     btnCheck.Enabled = true;
                     btnUpdate.Enabled = m_PendingCount > 0;
                     btnCancel.Enabled = false;
+                    btnRaw.Enabled = true;
                     break;
 
                 case AppState.Updating:
@@ -165,6 +242,7 @@ namespace App.Updater
                     btnCheck.Enabled = false;
                     btnUpdate.Enabled = false;
                     btnCancel.Enabled = true;
+                    btnRaw.Enabled = false;
                     break;
 
                 case AppState.Done:
@@ -172,6 +250,7 @@ namespace App.Updater
                     btnCheck.Enabled = true;
                     btnUpdate.Enabled = false;
                     btnCancel.Enabled = false;
+                    btnRaw.Enabled = true;
                     break;
             }
         }
