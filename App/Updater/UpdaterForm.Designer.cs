@@ -17,7 +17,7 @@ namespace App.Updater
         private Button btnCheck;
         private Button btnUpdate;
         private Button btnCancel;
-        private Button btnRaw;
+        private Button btnDebug;
 
         protected override void Dispose(bool disposing)
         {
@@ -35,14 +35,14 @@ namespace App.Updater
             btnCheck = new Button();
             btnUpdate = new Button();
             btnCancel = new Button();
-            btnRaw = new Button();
+            btnDebug = new Button();
 
             SuspendLayout();
 
             // ── Form ─────────────────────────────────────────────────
             Text = "Aktualizator — Winget";
-            Size = new Size(880, 540);
-            MinimumSize = new Size(600, 400);
+            Size = new Size(1420, 960);
+            MinimumSize = new Size(1420, 960);
             BackColor = Color.FromArgb(30, 30, 30);
             ForeColor = Color.White;
             StartPosition = FormStartPosition.CenterParent;
@@ -119,7 +119,7 @@ namespace App.Updater
                 Cursor = Cursors.Hand
             };
 
-            btnRaw = new Button
+            btnDebug = new Button
             {
                 Text = "Debug",
                 Width = 160,
@@ -133,19 +133,19 @@ namespace App.Updater
             btnCheck.Enabled = false;
             btnUpdate.Enabled = false;
             btnCancel.Enabled = false;
-            btnRaw.Enabled = false;
+            btnDebug.Enabled = false;
 
             btnCheck.Location = new Point(10, 9);
             btnUpdate.Location = new Point(180, 9);
             btnCancel.Location = new Point(350, 9);
-            btnRaw.Location = new Point(520, 9);
+            btnDebug.Location = new Point(1225, 9);
 
             btnCheck.Click += BtnCheck_Click;
             btnUpdate.Click += BtnUpdate_Click;
             btnCancel.Click += BtnCancel_Click;
-            btnRaw.Click += BtnRaw_Click;
+            btnDebug.Click += btnDebug_Click;
 
-            pnlBottom.Controls.AddRange(new Control[] { btnCheck, btnUpdate, btnCancel, btnRaw });
+            pnlBottom.Controls.AddRange(new Control[] { btnCheck, btnUpdate, btnCancel, btnDebug });
 
             // ── Składanie ────────────────────────────────────────────
             Controls.Add(rtbOutput);

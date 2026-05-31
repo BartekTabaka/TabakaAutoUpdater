@@ -12,6 +12,7 @@ namespace App.Updater
             // see https://aka.ms/applicationconfiguration.
             ApplicationConfiguration.Initialize();
             Application.Run(new MainWindow());
+            //Application.Run(new UpdaterForm());
         }
     }
 }

@@ -34,7 +34,7 @@ A simple Windows application for checking and installing software updates using 
 | **Sprawdź** | Manually re-check for available updates |
 | **Aktualizuj** | Install all pending updates |
 | **Anuluj** | Cancel an ongoing update |
-| **Raw** | Show raw winget output + diagnostic report |
+| **Debug** | Show raw winget output + diagnostic report |
 
 Diagnostic logs are saved to `logs/winget_diag_<timestamp>.txt` next to the executable.
 

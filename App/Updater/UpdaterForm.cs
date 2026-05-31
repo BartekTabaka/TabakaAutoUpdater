@@ -18,7 +18,7 @@ namespace App.Updater
         {
             InitializeComponent();
             Icon = new Icon("assets/icon.ico");      // Ikona okna
-            WindowState = FormWindowState.Maximized; // Fullscreen
+            //WindowState = FormWindowState.Maximized; // Fullscreen
         }
 
         protected override async void OnLoad(EventArgs e)
@@ -106,7 +106,7 @@ namespace App.Updater
 
         private void BtnCheck_Click(object sender, EventArgs e) => _ = CheckUpdatesAsync();
 
-        private async void BtnRaw_Click(object sender, EventArgs e)
+        private async void btnDebug_Click(object sender, EventArgs e)
         {
             /*SetState(AppState.Checking);
             rtbOutput.Clear();
@@ -226,7 +226,7 @@ namespace App.Updater
                     btnCheck.Enabled = false;
                     btnUpdate.Enabled = false;
                     btnCancel.Enabled = false;
-                    btnRaw.Enabled = false;
+                    btnDebug.Enabled = false;
                     break;
 
                 case AppState.Ready:
@@ -234,7 +234,7 @@ namespace App.Updater
                     btnCheck.Enabled = true;
                     btnUpdate.Enabled = m_PendingCount > 0;
                     btnCancel.Enabled = false;
-                    btnRaw.Enabled = true;
+                    btnDebug.Enabled = true;
                     break;
 
                 case AppState.Updating:
@@ -242,7 +242,7 @@ namespace App.Updater
                     btnCheck.Enabled = false;
                     btnUpdate.Enabled = false;
                     btnCancel.Enabled = true;
-                    btnRaw.Enabled = false;
+                    btnDebug.Enabled = false;
                     break;
 
                 case AppState.Done:
@@ -250,7 +250,7 @@ namespace App.Updater
                     btnCheck.Enabled = true;
                     btnUpdate.Enabled = false;
                     btnCancel.Enabled = false;
-                    btnRaw.Enabled = true;
+                    btnDebug.Enabled = true;
                     break;
             }
         }
