@@ -25,8 +25,13 @@ namespace App.Updater
         {
             base.OnLoad(e);
             await CheckUpdatesAsync();
+            // Auto checks for updates after opening the window
         }
 
+        /// <summary>
+        /// Checks for available updates and updates the UI accordingly.
+        /// Uses the WingetService to get the list of upgradable applications.
+        /// </summary>
         private async Task CheckUpdatesAsync()
         {
             SetState(AppState.Checking);
@@ -51,7 +56,7 @@ namespace App.Updater
                     AppendLine("Wszystkie aplikacje są aktualne.", Color.LightGreen);
                 }
             }
-            catch (Exception ex)
+            catch (Exception ex) // Error catching
             {
                 AppendLine($"Błąd podczas sprawdzania: {ex.Message}", Color.OrangeRed);
             }
@@ -59,15 +64,6 @@ namespace App.Updater
             {
                 SetState(AppState.Ready);
             }
-
-            //await CommandRunner.RunCommandRaw("winget upgrade --scope machine", line =>
-            //{
-            //    if (rtbOutput.InvokeRequired)
-            //        rtbOutput.Invoke(() => AppendLine(line, ClassifyLine(line)));
-            //    else
-            //        AppendLine(line, Color.AliceBlue);
-            //});
-            //SetState(AppState.Ready);
         }
 
         private async void BtnUpdate_Click(object sender, EventArgs e)
@@ -78,6 +74,7 @@ namespace App.Updater
 
             try
             {
+                // Run upgrading process through WingetService
                 await m_WingetService.RunUpgradeAsync(line =>
                 {
                     if (IsHandleCreated)
@@ -86,15 +83,15 @@ namespace App.Updater
 
                 AppendLine("\n══ Aktualizacja zakończona ══", Color.LightGreen);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) // Cancellation handling
             {
                 AppendLine("\nAktualizacja anulowana przez użytkownika.", Color.Yellow);
             }
-            catch (Exception ex)
+            catch (Exception ex) // General error handling
             {
                 AppendLine($"\nBłąd: {ex.Message}", Color.OrangeRed);
             }
-            finally
+            finally // Cleanup
             {
                 m_Cts.Dispose();
                 m_Cts = null;
@@ -108,58 +105,14 @@ namespace App.Updater
 
         private async void btnDebug_Click(object sender, EventArgs e)
         {
-            /*SetState(AppState.Checking);
-            rtbOutput.Clear();
-            AppendLine(" === DEBUG ===", Color.Red);
-
-            // Funkcja wspomagająca (żeby nie pisać tego samego wielokrotnie)
-            void AppendRaw(string line)
-            {
-                //AppendLine("AppendRaw", Color.Blue);
-                if (rtbOutput.InvokeRequired)
-                {
-                    rtbOutput.Invoke(() => AppendLine(line, Color.LightGray));
-                    //rtbOutput.Invoke(() => AppendLine("Invoke", Color.Blue));
-                }
-                else
-                {
-                    AppendLine("Bez Invoke", Color.Blue);
-                    AppendLine(line, Color.LightGray);
-                }
-            }
-
-            // ── Komendy ───────────────────────────────────────
-
-            // Wersja winget
-            AppendLine(" === WERSJA ===", Color.Red);
-            await CommandRunner.RunCommandRaw("winget --version", line =>
-            {
-                AppendRaw(line);
-            });
-
-            // Lista aplikacji
-            //AppendLine(" === LISTA ===", Color.Red);
-            //await CommandRunner.RunCommand("winget list --source winget", line =>
-            //{
-            //    AppendRaw(line);
-            //});
-
-            // Aktualizacje
-            AppendLine(" === AKTUALIZACJE ===", Color.Red);
-            await CommandRunner.RunCommandRaw("winget upgrade --scope machine", line =>
-            {
-                AppendRaw(line);
-            });
-
-            SetState(AppState.Done);*/
-
             SetState(AppState.Checking);
             rtbOutput.Clear();
             AppendLine("=== DIAGNOSTICS ===", Color.Red);
 
+            // Run diagnostics and get the report
             var report = await m_WingetService.DiagnoseAsync();
 
-            // Każda linia raportu jako osobny wpis
+            // Every line is classified for better readability (errors in red, found packages in green, etc.)
             foreach (var line in report.Split('\n'))
             {
                 var color = line.StartsWith("!!!") ? Color.OrangeRed
@@ -175,6 +128,9 @@ namespace App.Updater
             SetState(AppState.Done);
         }
 
+        /// <summary>
+        /// Updates the cursor based on whether it's hovering over a disabled button in the bottom panel.
+        /// </summary>
         private void PnlBottom_MouseMove(object sender, MouseEventArgs e)
         {
             var control = pnlBottom.GetChildAtPoint(e.Location);
@@ -184,6 +140,7 @@ namespace App.Updater
 
         // ── Helpers ──────────────────────────────────────────────────
 
+        // Skips appending lines that are just spinner characters
         private static readonly HashSet<string> s_SpinnerChars = ["|", "/", "-", "\\"];
         private void AppendLine(string text, Color color)
         {
@@ -198,6 +155,9 @@ namespace App.Updater
         }
         private void AppendLine(string text) => AppendLine(text, Color.White);
 
+        /// <summary>
+        /// Line classification based on keywords for better readability in the output.
+        /// </summary>
         private static Color ClassifyLine(string line)
         {
             if (string.IsNullOrWhiteSpace(line)) return Color.White;
@@ -215,8 +175,11 @@ namespace App.Updater
             return Color.White;
         }
 
+        /// <summary>
+        /// App state management to control the UI elements (buttons, status label) 
+        /// based on the current operation (checking, ready, updating, done).
+        /// </summary>
         private enum AppState { Checking, Ready, Updating, Done }
-
         private void SetState(AppState state)
         {
             switch (state)

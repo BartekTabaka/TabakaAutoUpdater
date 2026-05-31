@@ -18,7 +18,10 @@ namespace Core.Updater
         //  PUBLIC API
         // ═══════════════════════════════════════
 
+        // Agreements flags to ensure non-interactive mode and avoid unexpected prompts during both check and upgrade operations.
         private const string m_Agreements = "--accept-package-agreements --accept-source-agreements";
+
+        // Checks for updates (waits for completion) and returns the count and list of package names that have available updates.
         public async Task<(int Count, List<string> Names)> CheckUpdatesAsync(CancellationToken ct = default)
         {
             var lines = new List<string>();
@@ -26,6 +29,7 @@ namespace Core.Updater
             return ParseUpgradeList(lines);
         }
 
+        // Runs the upgrade process and invokes the provided callback for each line of output.
         public async Task RunUpgradeAsync(Action<string> onLine, CancellationToken ct = default)
         {
             await RunWingetAsync(
@@ -40,29 +44,30 @@ namespace Core.Updater
         /// </summary>
         public async Task<string> DiagnoseAsync(CancellationToken ct = default)
         {
-            const string cmd = $"upgrade --scope machine {m_Agreements}";
+            const string command = $"upgrade --scope machine {m_Agreements}";
             var captured = new List<CapturedLine>();
 
             int exitCode = await RunWingetAsync(
-                cmd,
+                command,
                 (src, raw) => captured.Add(new CapturedLine(src, raw)),
                 ct);
 
             var sb = new StringBuilder();
-            WriteHeader(sb, cmd, exitCode, captured.Count);
+            WriteHeader(sb, command, exitCode, captured.Count);
             WriteRawOutput(sb, captured);
             WriteParserTrace(sb, captured);
 
             var report = sb.ToString();
 
-            // Zapis do pliku — łatwiej sprawdzić niż szukać w UI
+            // Save report to file
             try
             {
+                // Ensure logs directory exists ("logs" folder where .exe is located)
                 var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                 Directory.CreateDirectory(logsDir);
 
                 var fileName = $"winget_diag_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
-                var path = Path.Combine(logsDir, fileName);
+                var path = Path.Combine(logsDir, fileName); // Final path with filename
                 await File.WriteAllTextAsync(path, report, Encoding.UTF8, ct);
                 report += $"\n[Raport zapisany: {path}]";
             }
@@ -75,6 +80,10 @@ namespace Core.Updater
         //  PARSING
         // ═══════════════════════════════════════
 
+        /// <summary>
+        /// Parses the output of the winget upgrade command and returns the count 
+        /// and list of package names that have available updates.
+        /// </summary>
         private static (int Count, List<string> Names) ParseUpgradeList(List<string> lines)
         {
             var names = new List<string>();
@@ -94,11 +103,6 @@ namespace Core.Updater
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
 
-                // DEBUGOWANIE - zbyt ogólne
-                //if (char.IsDigit(line.TrimStart()[0]))
-                //    break;
-
-                // Roziwązanie
                 if (Regex.IsMatch(line.TrimStart(), @"^\d+ (upgrade|package)"))
                     break;
 
@@ -112,9 +116,6 @@ namespace Core.Updater
 
         private static string ExtractFirstColumn(string line)
         {
-            //var match = Regex.Match(line, @"^(.+?)\s{2,}");
-            //return match.Success ? match.Groups[1].Value.Trim() : line.Trim();\
-
             var elipsisIndex = line.IndexOf('…');
             if (elipsisIndex >= 0)
                 return line[..(elipsisIndex + 1)].Trim();
@@ -132,6 +133,7 @@ namespace Core.Updater
             Action<string, string> onLine, // (source: OUT/ERR, raw line)
             CancellationToken ct)
         {
+            // Process Info
             var psi = new ProcessStartInfo
             {
                 FileName = "winget",
@@ -141,11 +143,13 @@ namespace Core.Updater
                 RedirectStandardError = true,
                 CreateNoWindow = true,
                 StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8   // było pominięte — fix
+                StandardErrorEncoding = Encoding.UTF8
             };
 
+            // New process
             using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
+            // Callbacks
             process.OutputDataReceived += (_, e) =>
             {
                 if (e.Data is not null) onLine("OUT", e.Data);
@@ -155,16 +159,18 @@ namespace Core.Updater
                 if (e.Data is not null) onLine("ERR", e.Data);
             };
 
+            // Process start
             process.Start();
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
             try
             {
+                // Wait for exit with cancellation support
                 await process.WaitForExitAsync(ct);
                 process.WaitForExit(); // flush remaining OutputDataReceived events (race condition fix)
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) // Cancellation requested, kill the process
             {
                 process.Kill(entireProcessTree: true);
                 throw;
@@ -212,8 +218,6 @@ namespace Core.Updater
                 var stripped = StripAnsi(captured[i].Raw);
                 var trimmed = stripped.TrimStart();
 
-                // Sprawdź co zostaje po splitowaniu po \r (spinner nadpisuje wcześniejsze linie).
-                // Jeśli trimmed != afterCrSplit to \r ukrywa treść — prawdopodobna przyczyna buga.
                 var afterCrSplit = stripped
                     .Split('\r')
                     .Select(s => s.Trim())
@@ -246,14 +250,6 @@ namespace Core.Updater
                     continue;
                 }
 
-                // DEBUGOWANIE - zbyt ogólne
-                //if (char.IsDigit(trimmed[0]))
-                //{
-                //    sb.AppendLine($"[{i:D3}] SUMMARY → koniec: \"{Truncate(trimmed, 60)}\"");
-                //    break;
-                //}
-
-                // Roziwązanie
                 if (Regex.IsMatch(trimmed, @"^\d+ (upgrade|package)"))
                     break;
 
@@ -278,7 +274,7 @@ namespace Core.Updater
                 sb.AppendLine($"  - {n}");
         }
 
-        /// <summary>Zamienia znaki kontrolne na czytelne znaczniki, np. \r → &lt;CR&gt;.</summary>
+        /// <summary> Zamienia znaki kontrolne na czytelne znaczniki, np. \r → <CR> </summary>
         private static string MakeVisible(string input)
         {
             var sb = new StringBuilder(input.Length * 2);
