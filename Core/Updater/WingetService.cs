@@ -27,7 +27,7 @@ namespace Core.Updater
         {
             var lines = new List<string>();
             int exitCode = await RunWingetAsync(
-                $"upgrade --scope machine {m_SourceAgreements}",  (_, raw) => lines.Add(raw), ct
+                $"upgrade {m_SourceAgreements}",  (_, raw) => lines.Add(raw), ct
             );
 
             if (exitCode != 0)
@@ -53,7 +53,7 @@ namespace Core.Updater
         /// </summary>
         public async Task<string> DiagnoseAsync(CancellationToken ct = default)
         {
-            const string command = $"upgrade --scope machine {m_SourceAgreements}";
+            const string command = $"upgrade {m_SourceAgreements}";
             var captured = new List<CapturedLine>();
 
             int exitCode = await RunWingetAsync(
