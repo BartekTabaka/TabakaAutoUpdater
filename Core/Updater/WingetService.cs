@@ -19,13 +19,22 @@ namespace Core.Updater
         // ═══════════════════════════════════════
 
         // Agreements flags to ensure non-interactive mode and avoid unexpected prompts during both check and upgrade operations.
-        private const string m_Agreements = "--accept-package-agreements --accept-source-agreements";
+        private const string m_SourceAgreements = "--accept-source-agreements";                          // For checking updates
+        private const string m_AllAgreements = "--accept-package-agreements --accept-source-agreements"; // For running upgrades (accepting all agreements to prevent prompts during installation)
 
         // Checks for updates (waits for completion) and returns the count and list of package names that have available updates.
         public async Task<(int Count, List<string> Names)> CheckUpdatesAsync(CancellationToken ct = default)
         {
             var lines = new List<string>();
-            await RunWingetAsync($"upgrade --scope machine {m_Agreements}", (_, raw) => lines.Add(raw), ct);
+            int exitCode = await RunWingetAsync(
+                $"upgrade --scope machine {m_SourceAgreements}",  (_, raw) => lines.Add(raw), ct
+            );
+
+            if (exitCode != 0)
+            {
+                return (0, new List<string>()); // In case of error, return empty list (could also throw an exception or return a Result type)
+            }
+                
             return ParseUpgradeList(lines);
         }
 
@@ -33,9 +42,9 @@ namespace Core.Updater
         public async Task RunUpgradeAsync(Action<string> onLine, CancellationToken ct = default)
         {
             await RunWingetAsync(
-                $"upgrade --all --scope machine --silent --uninstall-previous {m_Agreements}",
-                (src, raw) => onLine((src == "ERR" ? "[!] " : "") + StripAnsi(raw)),
-                ct);
+                $"upgrade --all --scope machine --silent --uninstall-previous {m_AllAgreements}",
+                (src, raw) => onLine((src == "ERR" ? "[!] " : "") + StripAnsi(raw)), ct
+            );
         }
 
         /// <summary>
@@ -44,7 +53,7 @@ namespace Core.Updater
         /// </summary>
         public async Task<string> DiagnoseAsync(CancellationToken ct = default)
         {
-            const string command = $"upgrade --scope machine {m_Agreements}";
+            const string command = $"upgrade --scope machine {m_SourceAgreements}";
             var captured = new List<CapturedLine>();
 
             int exitCode = await RunWingetAsync(
