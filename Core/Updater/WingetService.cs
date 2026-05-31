@@ -18,17 +18,18 @@ namespace Core.Updater
         //  PUBLIC API
         // ═══════════════════════════════════════
 
+        private const string m_Agreements = "--accept-package-agreements --accept-source-agreements";
         public async Task<(int Count, List<string> Names)> CheckUpdatesAsync(CancellationToken ct = default)
         {
             var lines = new List<string>();
-            await RunWingetAsync("upgrade --scope machine", (_, raw) => lines.Add(raw), ct);
+            await RunWingetAsync($"upgrade --scope machine {m_Agreements}", (_, raw) => lines.Add(raw), ct);
             return ParseUpgradeList(lines);
         }
 
         public async Task RunUpgradeAsync(Action<string> onLine, CancellationToken ct = default)
         {
             await RunWingetAsync(
-                "upgrade --all --scope machine --silent --uninstall-previous",
+                $"upgrade --all --scope machine --silent --uninstall-previous {m_Agreements}",
                 (src, raw) => onLine((src == "ERR" ? "[!] " : "") + StripAnsi(raw)),
                 ct);
         }
@@ -39,7 +40,7 @@ namespace Core.Updater
         /// </summary>
         public async Task<string> DiagnoseAsync(CancellationToken ct = default)
         {
-            const string cmd = "upgrade --scope machine";
+            const string cmd = $"upgrade --scope machine {m_Agreements}";
             var captured = new List<CapturedLine>();
 
             int exitCode = await RunWingetAsync(
