@@ -66,6 +66,7 @@ namespace App.Updater
             }
         }
 
+        // Updating button
         private async void BtnUpdate_Click(object sender, EventArgs e)
         {
             m_Cts = new CancellationTokenSource();
@@ -103,6 +104,7 @@ namespace App.Updater
 
         private void BtnCheck_Click(object sender, EventArgs e) => _ = CheckUpdatesAsync();
 
+        // Diagnostics button
         private async void btnDebug_Click(object sender, EventArgs e)
         {
             SetState(AppState.Checking);
@@ -120,6 +122,8 @@ namespace App.Updater
                           : line.Contains("PAKIET:") ? Color.LightGreen
                           : line.Contains("SEPARATOR") ? Color.Cyan
                           : line.Contains("UWAGA") ? Color.OrangeRed
+                          : line.Contains("Wszystkie pakiety są aktualne") ? Color.LightGreen
+                          : line.Contains("Wynik:") ? Color.MediumPurple
                           : Color.LightGray;
 
                 AppendLine(line, color);

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -97,6 +98,9 @@ namespace Core.Updater
         {
             var names = new List<string>();
             bool pastSeparator = false;
+
+            if (lines.Any(l => StripAnsi(l).Trim() == "No installed package found matching input criteria."))
+                return (0, names);
 
             foreach (var raw in lines)
             {
@@ -218,6 +222,15 @@ namespace Core.Updater
         private static void WriteParserTrace(StringBuilder sb, List<CapturedLine> captured)
         {
             sb.AppendLine("--- PARSER TRACE ---");
+
+            // Sprawdzenie czy wszystkie pakiety są aktualne (wskazuje na to string)
+            if (captured.Any(l => StripAnsi(l.Raw).Trim() == "No installed package found matching input criteria."))
+            {
+                sb.AppendLine("Wszystkie pakiety są aktualne (brak wyników do parsowania).");
+                sb.AppendLine();
+                sb.AppendLine("Wynik: 0 pakiet(y)");
+                return;
+            }
 
             var names = new List<string>();
             bool pastSeparator = false;
