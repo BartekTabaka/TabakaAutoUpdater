@@ -42,7 +42,7 @@ namespace Core.Updater
         public async Task RunUpgradeAsync(Action<string> onLine, CancellationToken ct = default)
         {
             await RunWingetAsync(
-                $"upgrade --all --scope machine --silent --uninstall-previous {m_AllAgreements}",
+                $"upgrade --all --silent {m_AllAgreements}",
                 (src, raw) => onLine((src == "ERR" ? "[!] " : "") + StripAnsi(raw)), ct
             );
         }

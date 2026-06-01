@@ -94,6 +94,7 @@ namespace App.Updater
                 BackColor = Color.FromArgb(60, 60, 60),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
 
@@ -105,6 +106,7 @@ namespace App.Updater
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
 
@@ -116,6 +118,7 @@ namespace App.Updater
                 BackColor = Color.FromArgb(180, 40, 40),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
 
@@ -127,6 +130,7 @@ namespace App.Updater
                 BackColor = Color.LightGreen,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
+                TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
 
