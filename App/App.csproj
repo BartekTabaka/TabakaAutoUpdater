@@ -9,6 +9,8 @@
     <ApplicationIcon>assets\icon.ico</ApplicationIcon>
     <Title>Tabaka Auto Updater</Title>
     <AssemblyName>TabakaAutoUpdater</AssemblyName>
+    <NeutralLanguage>pl-PL</NeutralLanguage>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
   <ItemGroup>

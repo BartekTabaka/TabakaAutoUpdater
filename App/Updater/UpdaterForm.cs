@@ -1,10 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Core.Updater;
+
+////////////
+///
+/// TODO:
+/// 1. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane
+/// 
+////////////
 
 namespace App.Updater
 {
@@ -13,6 +21,11 @@ namespace App.Updater
         private readonly WingetService m_WingetService = new();
         private CancellationTokenSource? m_Cts;
         private int m_PendingCount;
+
+        // Zmienne do wypisywania obecnie aktualizowanej aplikacji
+        private string m_CurrentUpdatePackage = "";
+        private static readonly Regex s_PackageFoundRegex = new(@"Found (.+?) \[", RegexOptions.Compiled);
+        private static bool IsProgressLine(string line) => line.Contains('█') || line.Contains('░') || line.Contains('▒');
 
         public UpdaterForm()
         {
@@ -72,6 +85,7 @@ namespace App.Updater
             m_Cts = new CancellationTokenSource();
             SetState(AppState.Updating);
             AppendLine("\n══ Rozpoczęcie aktualizacji ══\n", Color.Cyan);
+            m_CurrentUpdatePackage = "";
 
             try
             {
@@ -79,10 +93,10 @@ namespace App.Updater
                 await m_WingetService.RunUpgradeAsync(line =>
                 {
                     if (IsHandleCreated)
-                        Invoke(() => AppendLine(line, ClassifyLine(line)));
+                        Invoke(() => HandleUpgradeLine(line));
                 }, m_Cts.Token);
 
-                AppendLine("\n══ Aktualizacja zakończona ══", Color.LightGreen);
+                AppendLine("\n══ Aktualizacja zakończona ══", Color.Magenta);
             }
             catch (OperationCanceledException) // Cancellation handling
             {
@@ -96,6 +110,7 @@ namespace App.Updater
             {
                 m_Cts.Dispose();
                 m_Cts = null;
+                m_CurrentUpdatePackage = "";
                 SetState(AppState.Done);
             }
         }
@@ -159,9 +174,7 @@ namespace App.Updater
         }
         private void AppendLine(string text) => AppendLine(text, Color.White);
 
-        /// <summary>
-        /// Line classification based on keywords for better readability in the output.
-        /// </summary>
+        // Line classification based on keywords for better readability in the output.
         private static Color ClassifyLine(string line)
         {
             if (string.IsNullOrWhiteSpace(line)) return Color.White;
@@ -177,6 +190,35 @@ namespace App.Updater
                 return Color.Cyan;
 
             return Color.White;
+        }
+
+        // Obsługuje status i progres aktualizowania oraz pobierania
+        private void HandleUpgradeLine(string line)
+        {
+            // Wyszukiwanie linii informującej o następnej aktualizacji
+            // np. (1/2) Found Google Chrome (EXE) [Google.Chrome.EXE] Version X.X.X.X
+            var match = s_PackageFoundRegex.Match(line);
+            if (match.Success)
+            {
+                m_CurrentUpdatePackage = match.Groups[1].Value.Trim();
+                lblStatus.Text = $"Aktualizowanie {m_CurrentUpdatePackage}";
+                AppendLine($"\n{line}", ClassifyLine(line));
+                return;
+            }
+
+            // Dodawanie prefixu do pasku pobierania
+            if (IsProgressLine(line))
+            {
+                var prefix = string.IsNullOrEmpty(m_CurrentUpdatePackage) ?
+                    "" : $"Pobieranie {m_CurrentUpdatePackage} -  ";
+                var display = prefix + line.TrimStart();
+
+                AppendLine(display, Color.MediumOrchid);
+                return;
+            }
+
+            // Normalne wypisywanie pozostałych linii
+            AppendLine(line, ClassifyLine(line));
         }
 
         /// <summary>

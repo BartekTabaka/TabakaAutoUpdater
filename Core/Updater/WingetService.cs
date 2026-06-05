@@ -33,7 +33,7 @@ namespace Core.Updater
 
             if (exitCode != 0)
             {
-                return (0, new List<string>()); // In case of error, return empty list (could also throw an exception or return a Result type)
+                return (0, new List<string>()); // In case of error, return empty list
             }
                 
             return ParseUpgradeList(lines);
