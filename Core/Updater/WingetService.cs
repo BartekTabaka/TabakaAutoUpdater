@@ -49,8 +49,8 @@ namespace Core.Updater
         }
 
         /// <summary>
-        /// Uruchamia winget i zwraca pełny raport diagnostyczny jako string.
-        /// Raport jest też zapisywany do katalogu "logs" w katalogu bazowym aplikacji.
+        /// Runs winget and returns a full diagnostic report as a string.
+        /// This report is also saved to the 'logs' directory in the application's root directory.
         /// </summary>
         public async Task<string> DiagnoseAsync(CancellationToken ct = default)
         {
@@ -223,7 +223,7 @@ namespace Core.Updater
         {
             sb.AppendLine("--- PARSER TRACE ---");
 
-            // Sprawdzenie czy wszystkie pakiety są aktualne (wskazuje na to string)
+            // Check whether all the packages are up to date (as indicated by the string)
             if (captured.Any(l => StripAnsi(l.Raw).Trim() == "No installed package found matching input criteria."))
             {
                 sb.AppendLine("Wszystkie pakiety są aktualne (brak wyników do parsowania).");
@@ -296,7 +296,7 @@ namespace Core.Updater
                 sb.AppendLine($"  - {n}");
         }
 
-        /// <summary> Zamienia znaki kontrolne na czytelne znaczniki, np. \r → <CR> </summary>
+        /// <summary> Converts control characters into readable tags, e.g. \r → <CR> </summary>
         private static string MakeVisible(string input)
         {
             var sb = new StringBuilder(input.Length * 2);

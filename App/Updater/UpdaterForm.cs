@@ -10,7 +10,9 @@ using Core.Updater;
 ////////////
 ///
 /// TODO:
-/// 1. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane
+/// 1. Zamiana polskich komentarzy na angielskie                        ( -> 1.2.0 )
+/// 2. Dodanie listy błędów i wypisywanie co poszło nie tak na końcu    ( -> 1.3.0 )
+/// 3. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane   ( -> 2.0.0 )
 /// 
 ////////////
 
@@ -21,8 +23,9 @@ namespace App.Updater
         private readonly WingetService m_WingetService = new();
         private CancellationTokenSource? m_Cts;
         private int m_PendingCount;
+        private bool m_UpdateLaunchedThisSession = false;
 
-        // Zmienne do wypisywania obecnie aktualizowanej aplikacji
+        // Variables for the currently updated application
         private string m_CurrentUpdatePackage = "";
         private static readonly Regex s_PackageFoundRegex = new(@"Found (.+?) \[", RegexOptions.Compiled);
         private static bool IsProgressLine(string line) => line.Contains('█') || line.Contains('░') || line.Contains('▒');
@@ -30,7 +33,7 @@ namespace App.Updater
         public UpdaterForm()
         {
             InitializeComponent();
-            Icon = new Icon("assets/icon.ico");      // Ikona okna
+            Icon = new Icon("assets/icon.ico");      // Window icon
             //WindowState = FormWindowState.Maximized; // Fullscreen
         }
 
@@ -48,7 +51,10 @@ namespace App.Updater
         private async Task CheckUpdatesAsync()
         {
             SetState(AppState.Checking);
-            rtbOutput.Clear();
+
+            // To separate the validation results after the update so they aren't "stuck together"
+            if (m_UpdateLaunchedThisSession) AppendLine("\n\n");
+
             AppendLine("Sprawdzanie dostępnych aktualizacji...", Color.Gray);
 
             try
@@ -82,6 +88,8 @@ namespace App.Updater
         // Updating button
         private async void BtnUpdate_Click(object sender, EventArgs e)
         {
+            m_UpdateLaunchedThisSession = true;
+
             m_Cts = new CancellationTokenSource();
             SetState(AppState.Updating);
             AppendLine("\n══ Rozpoczęcie aktualizacji ══\n", Color.Cyan);
@@ -96,7 +104,7 @@ namespace App.Updater
                         Invoke(() => HandleUpgradeLine(line));
                 }, m_Cts.Token);
 
-                AppendLine("\n══ Aktualizacja zakończona ══", Color.Magenta);
+                AppendLine("\n══ Aktualizacja zakończona ══", Color.DeepPink);
             }
             catch (OperationCanceledException) // Cancellation handling
             {
@@ -192,11 +200,11 @@ namespace App.Updater
             return Color.White;
         }
 
-        // Obsługuje status i progres aktualizowania oraz pobierania
+        // Handles status and progress tracking for updates and downloads
         private void HandleUpgradeLine(string line)
         {
-            // Wyszukiwanie linii informującej o następnej aktualizacji
-            // np. (1/2) Found Google Chrome (EXE) [Google.Chrome.EXE] Version X.X.X.X
+            // Search for the line indicating the next update
+            // for example: (1/2) Found Google Chrome (EXE) [Google.Chrome.EXE] Version X.X.X.X
             var match = s_PackageFoundRegex.Match(line);
             if (match.Success)
             {
@@ -206,7 +214,7 @@ namespace App.Updater
                 return;
             }
 
-            // Dodawanie prefixu do pasku pobierania
+            // Adding a prefix to the download progress bar
             if (IsProgressLine(line))
             {
                 var prefix = string.IsNullOrEmpty(m_CurrentUpdatePackage) ?
@@ -217,7 +225,7 @@ namespace App.Updater
                 return;
             }
 
-            // Normalne wypisywanie pozostałych linii
+            // Normal formatting of the remaining lines
             AppendLine(line, ClassifyLine(line));
         }
 
