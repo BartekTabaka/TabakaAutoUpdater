@@ -12,8 +12,7 @@ using static System.Net.Mime.MediaTypeNames;
 ////////////
 ///
 /// TODO:
-/// 1. Dodanie listy błędów i wypisywanie co poszło nie tak na końcu    ( -> 1.2.0 )
-/// 2. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane   ( -> 2.0.0 )
+/// 1. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane   ( -> 2.0.0 )
 /// 
 ////////////
 
