@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Core.Updater;
+using static System.Net.Mime.MediaTypeNames;
 
 ////////////
 ///
 /// TODO:
-/// 1. Zamiana polskich komentarzy na angielskie                        ( -> 1.2.0 )
-/// 2. Dodanie listy błędów i wypisywanie co poszło nie tak na końcu    ( -> 1.3.0 )
-/// 3. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane   ( -> 2.0.0 )
+/// 1. Dodanie listy błędów i wypisywanie co poszło nie tak na końcu    ( -> 1.2.0 )
+/// 2. Sprawdzanie czy wszystkie potrzebne aplikacje są zainstalowane   ( -> 2.0.0 )
 /// 
 ////////////
 
@@ -20,21 +21,41 @@ namespace App.Updater
 {
     public partial class UpdaterForm : Form
     {
-        private readonly WingetService m_WingetService = new();
-        private CancellationTokenSource? m_Cts;
-        private int m_PendingCount;
-        private bool m_UpdateLaunchedThisSession = false;
+        private readonly WingetService m_WingetService = new(); // WingetService instance
+        private CancellationTokenSource? m_Cts;                 // Cancelletion token (for update canceling)
+        private int m_PendingCount;                             // Used for controlling whether the update button can be pressed or not
+        private bool m_UpdateLaunchedThisSession = false;       // Helper for UI readability
+        private enum LineContent 
+            { None, Info, Download, Success, Error, Found };    // Enum needed for line classification and coloring
 
-        // Variables for the currently updated application
-        private string m_CurrentUpdatePackage = "";
+        // Used for printing errors which could have occured while updating
+        private struct Error
+        {
+            public string App;
+            public string Message;
+            public Error(string message)
+            {
+                App = m_CurrentUpdatePackage;
+                Message = message;
+            }
+            public readonly string AsString()
+            {
+                string result = $"[!] {App} - {Message}";
+                return result;
+            }
+        }
+        private static List<Error> m_Errors = new List<Error>();
+
+        // Variables and function for the currently updated application
+        private static string m_CurrentUpdatePackage = "";
         private static readonly Regex s_PackageFoundRegex = new(@"Found (.+?) \[", RegexOptions.Compiled);
         private static bool IsProgressLine(string line) => line.Contains('█') || line.Contains('░') || line.Contains('▒');
 
         public UpdaterForm()
         {
             InitializeComponent();
-            Icon = new Icon("assets/icon.ico");      // Window icon
-            //WindowState = FormWindowState.Maximized; // Fullscreen
+            Icon = new Icon("assets/icon.ico");         // Window icon
+            //WindowState = FormWindowState.Maximized;  // Fullscreen
         }
 
         protected override async void OnLoad(EventArgs e)
@@ -77,7 +98,7 @@ namespace App.Updater
             }
             catch (Exception ex) // Error catching
             {
-                AppendLine($"Błąd podczas sprawdzania: {ex.Message}", Color.OrangeRed);
+                AppendLine($"Błąd podczas sprawdzania: {ex.Message}", Color.Red);
             }
             finally
             {
@@ -112,10 +133,12 @@ namespace App.Updater
             }
             catch (Exception ex) // General error handling
             {
-                AppendLine($"\nBłąd: {ex.Message}", Color.OrangeRed);
+                AppendLine($"\nBłąd: {ex.Message}", Color.Red);
             }
             finally // Cleanup
             {
+                PrintErrorList();
+
                 m_Cts.Dispose();
                 m_Cts = null;
                 m_CurrentUpdatePackage = "";
@@ -137,14 +160,14 @@ namespace App.Updater
             // Run diagnostics and get the report
             var report = await m_WingetService.DiagnoseAsync();
 
-            // Every line is classified for better readability (errors in red, found packages in green, etc.)
+            // Line classification
             foreach (var line in report.Split('\n'))
             {
-                var color = line.StartsWith("!!!") ? Color.OrangeRed
+                var color = line.StartsWith("!!!") ? Color.Red
                           : line.StartsWith("[") && line.Contains("][ERR]") ? Color.Yellow
                           : line.Contains("PAKIET:") ? Color.LightGreen
                           : line.Contains("SEPARATOR") ? Color.Cyan
-                          : line.Contains("UWAGA") ? Color.OrangeRed
+                          : line.Contains("UWAGA") ? Color.Red
                           : line.Contains("Wszystkie pakiety są aktualne") ? Color.LightGreen
                           : line.Contains("Wynik:") ? Color.MediumPurple
                           : Color.LightGray;
@@ -169,35 +192,64 @@ namespace App.Updater
 
         // Skips appending lines that are just spinner characters
         private static readonly HashSet<string> s_SpinnerChars = ["|", "/", "-", "\\"];
-        private void AppendLine(string text, Color color)
+        private void AppendLine(string text, Color? color = null)
         {
+            // Skipping lines that shouldn't be written
             if (s_SpinnerChars.Contains(text.Trim())) return;
             if (string.IsNullOrWhiteSpace(text)) return;
 
+            LineContent lineContent = ClassifyLine(text);
+
             rtbOutput.SelectionStart = rtbOutput.TextLength;
             rtbOutput.SelectionLength = 0;
-            rtbOutput.SelectionColor = color;
+            rtbOutput.SelectionColor = color ?? ColorLine(lineContent);
+
             rtbOutput.AppendText(text + "\n");
             rtbOutput.ScrollToCaret();
         }
-        private void AppendLine(string text) => AppendLine(text, Color.White);
 
         // Line classification based on keywords for better readability in the output.
-        private static Color ClassifyLine(string line)
+        private static LineContent ClassifyLine(string line)
         {
-            if (string.IsNullOrWhiteSpace(line)) return Color.White;
+            if (string.IsNullOrWhiteSpace(line)) return LineContent.None;
             var l = line.ToLowerInvariant();
 
             if (l.Contains("downloading") || l.Contains("installing"))
-                return Color.DeepSkyBlue;
+                return LineContent.Download;
             if (l.Contains("successfully") || l.Contains("installed"))
-                return Color.LightGreen;
+                return LineContent.Success;
             if (l.Contains("failed") || l.Contains("error") || l.StartsWith("[!]"))
-                return Color.OrangeRed;
-            if (l.Contains("found "))
-                return Color.Cyan;
+            {
+                Error error = new Error(line);
+                m_Errors.Add(error);
 
-            return Color.White;
+                return LineContent.Error;
+            }
+            if (l.Contains("found "))
+                return LineContent.Found;
+
+            return LineContent.Info;
+        }
+
+        private static Color ColorLine(LineContent content)
+        {
+            switch (content)
+            {
+                case LineContent.None:
+                    return Color.White;
+                case LineContent.Info:
+                    return Color.White;
+                case LineContent.Download:
+                    return Color.DeepSkyBlue;
+                case LineContent.Success:
+                    return Color.LightGreen;
+                case LineContent.Error:
+                    return Color.Red;
+                case LineContent.Found:
+                    return Color.Cyan;
+                default:
+                    return Color.White;
+            }
         }
 
         // Handles status and progress tracking for updates and downloads
@@ -210,7 +262,7 @@ namespace App.Updater
             {
                 m_CurrentUpdatePackage = match.Groups[1].Value.Trim();
                 lblStatus.Text = $"Aktualizowanie {m_CurrentUpdatePackage}";
-                AppendLine($"\n{line}", ClassifyLine(line));
+                AppendLine($"\n{line}");
                 return;
             }
 
@@ -226,7 +278,25 @@ namespace App.Updater
             }
 
             // Normal formatting of the remaining lines
-            AppendLine(line, ClassifyLine(line));
+            AppendLine(line);
+        }
+
+        // Print errors which occured while updating
+        private void PrintErrorList()
+        {
+            if (m_Errors.Count > 0)
+            {
+                AppendLine($"\nPodczas aktualizowania wystąpiły błędy ({m_Errors.Count}):", Color.Red);
+                foreach (Error error in m_Errors)
+                {
+                    rtbOutput.SelectionStart = rtbOutput.TextLength;
+                    rtbOutput.SelectionLength = 0;
+                    rtbOutput.SelectionColor = Color.Red;
+
+                    rtbOutput.AppendText(error.AsString() + "\n");
+                    rtbOutput.ScrollToCaret();
+                }
+            }
         }
 
         /// <summary>
