@@ -76,7 +76,7 @@ namespace Core.Updater
                 var logsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                 Directory.CreateDirectory(logsDir);
 
-                var fileName = $"winget_diag_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
+                var fileName = $"tau_diag_{DateTime.Now:yyyyMMdd_HHmmss}.txt";
                 var path = Path.Combine(logsDir, fileName); // Final path with filename
                 await File.WriteAllTextAsync(path, report, Encoding.UTF8, ct);
                 report += $"\n[Raport zapisany: {path}]";
