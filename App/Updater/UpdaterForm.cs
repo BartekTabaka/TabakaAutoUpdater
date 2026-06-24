@@ -199,6 +199,7 @@ namespace App.Updater
 
             LineContent lineContent = ClassifyLine(text);
 
+            // Move caret to the end, clear selection, and set the color for the next appended text
             rtbOutput.SelectionStart = rtbOutput.TextLength;
             rtbOutput.SelectionLength = 0;
             rtbOutput.SelectionColor = color ?? ColorLine(lineContent);
@@ -230,6 +231,7 @@ namespace App.Updater
             return LineContent.Info;
         }
 
+        // Color lines based on its content
         private static Color ColorLine(LineContent content)
         {
             switch (content)
